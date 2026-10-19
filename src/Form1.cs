@@ -27,7 +27,7 @@ namespace qikuli
     static Image img_me=Image.FromFile(Path.Combine(imagepath,"me.png"));
     static Image img_block=Image.FromFile(Path.Combine(imagepath,"block.png"));
 //    static SoundPlayer move_sound,full_sound;
-    static bool jump_1,jump_2,jump_3;
+    static bool jump_1,jump_2,jump_3,jump_4;
     static bool go_up,go_down,go_left,go_right;
     static bool go_up1,go_down1,go_left1,go_right1;
     static bool go_up0,go_down0,go_left0,go_right0;
@@ -316,8 +316,7 @@ namespace qikuli
     }    
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData) {
       //Text=""+keyData;
-      if(keyData>=Keys.NumPad0&&keyData<=Keys.NumPad9)
-        keyData-=Keys.NumPad0-Keys.D0;
+      if(keyData>=Keys.NumPad0&&keyData<=Keys.NumPad9) keyData-=Keys.NumPad0-Keys.D0;
       if(keyData>=Keys.D0&&keyData<=Keys.D9)
         kb_lvl+=(char)keyData;
       if(kb_lvl.Length==2||kb_lvl.Length>0&&keyData==Keys.Enter) {
@@ -438,28 +437,44 @@ namespace qikuli
       gr2.DrawString(final_text,f,final_brush,tx,ty);    
     }
 
-    
-    protected override void OnKeyUp(KeyEventArgs e) {
-      switch(e.KeyCode) {
-       case Keys.Up:go_up=false;go_up0=true;break;
-       case Keys.Down:go_down=false;go_down0=true;break;
-       case Keys.Left:go_left=false;go_left0=true;break;
-       case Keys.Right:go_right=false;go_right0=true;break;
-       case Keys.Menu:jump_1=false;break;
-       case Keys.ControlKey:jump_2=false;break;
-       case Keys.ShiftKey:jump_3=false;break;
+    Dictionary<Keys,int> kdown=new Dictionary<Keys, int>();
+
+    protected override void OnKeyUp(KeyEventArgs e) { OnKey(true,e);}
+		protected override void OnKeyDown(KeyEventArgs e) { OnKey(false,e);}
+		protected void OnKey(bool up,KeyEventArgs e) {
+      Keys kc=e.KeyCode;
+      bool rep=false;
+      if(up) kdown.Remove(kc);
+      else {
+        int d,dt,t=Environment.TickCount;
+        rep=kdown.TryGetValue(e.KeyCode,out d)&&(dt=t-d)<1000;
+        kdown[kc]=t;
+        if(rep) t=1;
       }
-    }
-    protected override void OnKeyDown(KeyEventArgs e) {
-      switch(e.KeyCode) {
-       case Keys.Up:go_up=true;go_up1=true;break;
-       case Keys.Down:go_down=true;go_down1=true;break;
-       case Keys.Left:go_left=true;go_left1=true;break;
-       case Keys.Right:go_right=true;go_right1=true;break;
-       case Keys.Menu:jump_1=true;break;
-       case Keys.ControlKey:jump_2=true;break;
-       case Keys.ShiftKey:jump_3=true;break;
-       
+      switch(kc) {
+        case Keys.Menu:jump_1=!up;break;  
+        case Keys.ControlKey:jump_2=!up;break;
+        case Keys.ShiftKey:jump_3=!up;break;
+        case Keys.Space:jump_4=!up;break;
+      }
+      if(rep) return;
+      switch(kc) {
+       case Keys.Up:
+       case Keys.Q:
+        go_up=!up;if(up) go_up0=true;else go_up1=true;
+				break;
+       case Keys.Down:
+       case Keys.A:
+        go_down=!up;if(up) go_down0=true;else go_down1=true;
+				break;
+       case Keys.Left:
+       case Keys.O:
+        go_left=!up;if(up) go_left0=true;else go_left1=true;
+				break;
+       case Keys.Right:
+       case Keys.P:
+        go_right=!up;if(up) go_right0=true;else go_right1=true;
+				break;
       }
     }
     
@@ -603,7 +618,7 @@ namespace qikuli
             bool lshift=false,rshift=false;
             if((go_left||go_left1)&&0!=(shift=GetShift(x2,y2,false))) lshift=true;
             else if((go_right||go_right1)&&0!=(shift=GetShift(x2,y2,true))) rshift=true;
-            if(y2>0&&Level.IsEmpty(BoardXY(x2,y2-1))&&(go_up||go_up1||jump_1||jump_2||jump_3||!(lshift||rshift))) {
+            if(y2>0&&Level.IsEmpty(BoardXY(x2,y2-1))&&(go_up||go_up1||jump_1||jump_2||jump_3||jump_4||!(lshift||rshift))) {
               int dir=0; 
               if(x2>0&&(go_left||go_left1)&&Level.IsEmpty(BoardXY(x2-1,y2-1))&&!Level.IsEmpty(BoardXY(x2-1,y2))) dir=-1;
               else if(x2<lvl_w-1&&(go_right||go_right1)&&Level.IsEmpty(BoardXY(x2+1,y2-1))&&!Level.IsEmpty(BoardXY(x2+1,y2))) dir=1;
